@@ -209,9 +209,15 @@ class MTMAGRPOTrainer:
         eval_dataset: Optional[Union[Dataset, IterableDataset]] = None,
         tokenizer: Optional[PreTrainedTokenizerBase] = None,
         wandb_config: Optional[Dict[str, Any]] = None,
+        eval_logger: Optional[Callable] = None,
+        eval_aggregator: Optional[Callable] = None,
     ):
         if agents is None:
             raise ValueError("agents must be provided")
+        
+        # Store logger functions as instance attributes
+        self.eval_logger = eval_logger
+        self.eval_aggregator = eval_aggregator
 
         self.agents = agents
         self.num_agents = len(agents)
@@ -394,11 +400,11 @@ class MTMAGRPOTrainer:
         if self.eval_dataset is None:
             return {}
 
-        # Import the multi-turn logger
-        from experiments.loggers.mt_code_logger import (
-            aggregate_mt_humaneval_metrics_for_logging,
-            mt_humaneval_logger,
-        )
+        # Use the logger functions passed as parameters
+        if self.eval_logger is None or self.eval_aggregator is None:
+            # If loggers are not provided, skip evaluation logging
+            print("Warning: Evaluation logger functions not provided, skipping detailed evaluation logging")
+            return {}
 
         eval_dataloader = self.get_eval_dataloader()
 
@@ -441,7 +447,7 @@ class MTMAGRPOTrainer:
                             and previous_best_main is not None
                         ):
                             # Get expert feedback based on previous turn's best result
-                            from experiments.rewards.code_utils import (
+                            from comlrl.utils import (
                                 concatenate_functions,
                                 extract_imports_from_prompt,
                             )
@@ -508,7 +514,7 @@ class MTMAGRPOTrainer:
                     all_completions2_turns.append(sample_completions2)
 
         # Get detailed multi-turn metrics
-        detailed_metrics = mt_humaneval_logger(
+        detailed_metrics = self.eval_logger(
             all_completions1_turns,
             all_completions2_turns,
             all_test_cases,
@@ -517,7 +523,7 @@ class MTMAGRPOTrainer:
         )
 
         # Aggregate metrics
-        aggregated_metrics = aggregate_mt_humaneval_metrics_for_logging(
+        aggregated_metrics = self.eval_aggregator(
             detailed_metrics, num_turns=self.args.num_turns
         )
 
@@ -586,7 +592,7 @@ class MTMAGRPOTrainer:
                             and previous_best_main is not None
                         ):
                             # Get expert feedback based on previous turn's best result
-                            from experiments.rewards.code_utils import (
+                            from comlrl.utils import (
                                 concatenate_functions,
                                 extract_imports_from_prompt,
                             )
