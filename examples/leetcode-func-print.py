@@ -1,12 +1,9 @@
 # Shuo: Tested 2 * Qwen2.5-1.5B model on a A100, at least 70GB VRAM is required
 
 import os
-import random
 from functools import partial
 from typing import Any, Dict
 
-import numpy as np
-import torch
 from datasets import Dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer
 

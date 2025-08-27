@@ -5,8 +5,6 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 import numpy as np
 import torch
 import wandb
-import transformers
-from packaging import version
 from datasets import Dataset, IterableDataset
 from torch.utils.data import DataLoader
 from transformers import PreTrainedModel, PreTrainedTokenizerBase, TrainingArguments
@@ -22,19 +20,17 @@ class MAGRPOConfig(TrainingArguments):
     Configuration for MAGRPO training, inheriting from TrainingArguments.
     Supports both single-turn and multi-turn training modes.
     """
-    
+
     # Core MAGRPO parameters
     num_generations: int = field(
         default=4,
-        metadata={
-            "help": "Number of generations to sample per prompt for each agent."
-        },
+        metadata={"help": "Number of generations to sample per prompt for each agent."},
     )
     max_new_tokens: int = field(
         default=256,
         metadata={"help": "Maximum number of new tokens to generate after the prompt."},
     )
-    
+
     # Generation parameters (Note: these are set but not currently used by the trainer)
     temperature: float = field(
         default=0.7,
@@ -50,11 +46,9 @@ class MAGRPOConfig(TrainingArguments):
     )
     beta: float = field(
         default=0.02,
-        metadata={
-            "help": "Beta parameter (currently set but not used in trainer)."
-        },
+        metadata={"help": "Beta parameter (currently set but not used in trainer)."},
     )
-    
+
     # Multi-turn specific parameters (optional, for MT-MAGRPO)
     num_turns: Optional[int] = field(
         default=1,
@@ -90,12 +84,12 @@ class MAGRPOTrainer:
     """
     Multi-Agent Group Relative Policy Optimization Trainer (MAGRPO).
     Supports both single-turn and multi-turn training with expert feedback.
-    
+
     When num_turns=1, this trainer behaves as a standard MAGRPO trainer.
     When num_turns>1, it adds multi-turn capabilities with expert feedback between turns.
 
     Args:
-        model: The model to be trained for homogenous agents
+        model: The model to be trained for homogeneous agents
         agents: List of agent models (alternative to model)
         num_agents: The number of agents
         reward_funcs: The reward functions for all agents
@@ -134,7 +128,7 @@ class MAGRPOTrainer:
             raise ValueError("Either model or agents must be provided")
         if model is not None and agents is not None:
             raise ValueError("Cannot provide both model and agents parameters")
-        
+
         self.args = args if args is not None else MAGRPOConfig()
 
         # Setup formatters based on whether multi-turn is enabled
@@ -142,7 +136,7 @@ class MAGRPOTrainer:
             self._setup_mt_formatters(formatters, num_agents)
         else:
             self._setup_formatters(formatters, num_agents)
-            
+
         self._setup_reward_functions(reward_funcs, reward_weights, reward_processors)
 
         if agents is not None:
@@ -257,10 +251,8 @@ class MAGRPOTrainer:
         elif callable(formatters) and not isinstance(formatters, list):
             # Wrap the formatter to accept expert_feedback parameter
             original_formatter = formatters
-            wrapped_formatter = (
-                lambda x, expert_feedback=None: original_formatter(
-                    x, expert_feedback=expert_feedback
-                )
+            wrapped_formatter = lambda x, expert_feedback=None: (
+                original_formatter(x, expert_feedback=expert_feedback)
                 if expert_feedback is not None
                 else original_formatter(x)
             )
@@ -338,13 +330,13 @@ class MAGRPOTrainer:
 
             wandb_project = self.wandb_config.get("project", "trl")
             wandb_entity = self.wandb_config.get("entity", "nu-llpr")
-            
+
             # Use different default names based on num_turns
             if self.args.num_turns == 1:
                 wandb_name = self.wandb_config.get("name", "test-magrpo")
             else:
                 wandb_name = self.wandb_config.get("name", "test-mt-magrpo")
-            
+
             wandb_dir = self.wandb_config.get("dir", None)
 
             config_dict = {
@@ -360,14 +352,16 @@ class MAGRPOTrainer:
                 "num_generations": self.args.num_generations,
                 "max_new_tokens": self.args.max_new_tokens,
             }
-            
+
             # Only add multi-turn specific config if num_turns > 1
             if self.args.num_turns > 1:
-                config_dict.update({
-                    "turn_gradient_weights": self.args.turn_gradient_weights,
-                    "early_termination_weight": self.args.early_termination_weight,
-                    "expert_model": self.args.expert_model,
-                })
+                config_dict.update(
+                    {
+                        "turn_gradient_weights": self.args.turn_gradient_weights,
+                        "early_termination_weight": self.args.early_termination_weight,
+                        "expert_model": self.args.expert_model,
+                    }
+                )
 
             init_kwargs = {
                 "project": wandb_project,
@@ -414,7 +408,7 @@ class MAGRPOTrainer:
     def evaluate(self, num_eval_samples: int = 4) -> Dict[str, float]:
         """
         Evaluation that supports both single-turn and multi-turn.
-        
+
         When num_turns=1, performs standard single-turn evaluation.
         When num_turns>1, performs multi-turn evaluation with expert feedback.
 
@@ -427,7 +421,7 @@ class MAGRPOTrainer:
         # For single-turn evaluation
         if self.args.num_turns == 1:
             return self._evaluate_single_turn(num_eval_samples)
-        
+
         # Multi-turn evaluation
         return self._evaluate_multi_turn(num_eval_samples)
 
@@ -640,13 +634,15 @@ class MAGRPOTrainer:
                         expert_feedbacks = [aux_expert_feedback, main_expert_feedback]
 
                         for agent_idx in range(self.num_agents):
-                            agent_completions = self._generate_completions_with_feedback(
-                                self.agents[agent_idx],
-                                [batch_item],
-                                agent_idx=agent_idx,
-                                num_return_sequences=1,  # Only one for evaluation
-                                max_new_tokens=self.args.max_new_tokens,
-                                expert_feedback=expert_feedbacks[agent_idx],
+                            agent_completions = (
+                                self._generate_completions_with_feedback(
+                                    self.agents[agent_idx],
+                                    [batch_item],
+                                    agent_idx=agent_idx,
+                                    num_return_sequences=1,  # Only one for evaluation
+                                    max_new_tokens=self.args.max_new_tokens,
+                                    expert_feedback=expert_feedbacks[agent_idx],
+                                )
                             )
                             all_completions.append(agent_completions)
 
@@ -704,14 +700,14 @@ class MAGRPOTrainer:
     def train(self, **kwargs):
         """
         Train method that supports both single-turn and multi-turn training.
-        
+
         When num_turns=1, performs standard single-turn training.
         When num_turns>1, performs multi-turn training with expert feedback.
         """
         # For single-turn, use standard train method
         if self.args.num_turns == 1:
             return self._train_single_turn(**kwargs)
-        
+
         # Multi-turn training
         return self._train_multi_turn(**kwargs)
 
@@ -746,7 +742,6 @@ class MAGRPOTrainer:
 
                 # Process each batch item separately
                 for item_idx, batch_item in enumerate(batch):
-
                     # Generate completions from each agent for this batch item
                     all_completions = []
                     for agent_idx in range(self.num_agents):
@@ -942,14 +937,16 @@ class MAGRPOTrainer:
                         expert_feedbacks = [aux_expert_feedback, main_expert_feedback]
 
                         for agent_idx in range(self.num_agents):
-                            agent_completions = self._generate_completions_with_feedback(
-                                self.agents[agent_idx],
-                                [batch_item],
-                                agent_idx=agent_idx,
-                                num_return_sequences=self.args.num_generations,
-                                max_new_tokens=self.args.max_new_tokens,
-                                expert_feedback=expert_feedbacks[agent_idx],
-                                **kwargs,
+                            agent_completions = (
+                                self._generate_completions_with_feedback(
+                                    self.agents[agent_idx],
+                                    [batch_item],
+                                    agent_idx=agent_idx,
+                                    num_return_sequences=self.args.num_generations,
+                                    max_new_tokens=self.args.max_new_tokens,
+                                    expert_feedback=expert_feedbacks[agent_idx],
+                                    **kwargs,
+                                )
                             )
                             all_completions.append(agent_completions)
 
@@ -1053,7 +1050,7 @@ class MAGRPOTrainer:
                                 )
                         elif early_termination and self.args.num_turns >= 2:
                             # If early terminated at turn 1, still log 0 improvement for turn 2
-                            wandb.log({f"turn_2/improvement_from_turn_1": 0.0})
+                            wandb.log({"turn_2/improvement_from_turn_1": 0.0})
 
                     # Sequential model updates after episode ends
                     batch_loss = 0.0
@@ -1073,7 +1070,8 @@ class MAGRPOTrainer:
                         if early_termination and turn_idx == len(turn_data) - 1:
                             # Combine turn weight with early termination weight
                             final_weight = (
-                                turn_gradient_weight * self.args.early_termination_weight
+                                turn_gradient_weight
+                                * self.args.early_termination_weight
                             )
                         else:
                             final_weight = turn_gradient_weight
@@ -1351,7 +1349,7 @@ class MAGRPOTrainer:
         """
         Generate completions with optional expert feedback.
         This wraps the _generate_completions method to handle expert feedback.
-        
+
         When num_turns=1 or expert_feedback is None, behaves like _generate_completions.
         """
         # If single-turn or no expert feedback, use standard method directly
@@ -1364,9 +1362,8 @@ class MAGRPOTrainer:
                 max_new_tokens=max_new_tokens,
                 **kwargs,
             )
-        
+
         # Multi-turn with expert feedback
-        device = agent.device
 
         format_func = self.formatters[agent_idx]
 
@@ -1567,7 +1564,6 @@ class MAGRPOTrainer:
         # Process each prompt in the batch
         for batch_idx in range(len(prompt_input_ids)):
             prompt_ids = prompt_input_ids[batch_idx]
-            prompt_mask = prompt_attention_mask[batch_idx]
 
             # Process each generated completion for this prompt
             for seq_idx, completion_tokens in enumerate(

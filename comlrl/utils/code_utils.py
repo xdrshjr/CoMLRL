@@ -63,7 +63,7 @@ def cleanup_code(code):
         elif in_function:
             # Check if we're still in the function based on indentation
             current_indent = len(line) - len(line.lstrip())
-            
+
             # Empty lines are included
             if not line.strip():
                 cleaned_lines.append(line)
@@ -71,9 +71,15 @@ def cleanup_code(code):
             elif current_indent > function_indent:
                 cleaned_lines.append(line)
             # Lines with equal indent might be continuation
-            elif current_indent == function_indent and line.strip() and not line.strip().startswith('#'):
+            elif (
+                current_indent == function_indent
+                and line.strip()
+                and not line.strip().startswith("#")
+            ):
                 # Check if it's likely a new statement/function
-                if re.match(r"^\s*(def|class|if|for|while|with|try|import|from)\s+", line):
+                if re.match(
+                    r"^\s*(def|class|if|for|while|with|try|import|from)\s+", line
+                ):
                     in_function = False
                 else:
                     cleaned_lines.append(line)

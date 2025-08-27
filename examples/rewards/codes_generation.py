@@ -220,7 +220,7 @@ def execution_reward(completion1: List[str], completion2: List[str]) -> List[flo
             ast.parse(test_code)
 
             reward += 0.5
-            print(f"✓ Syntax valid: +0.5 reward")
+            print("✓ Syntax valid: +0.5 reward")
 
             print_statements = extract_print_statements(test_code)
             unique_print_statements = deduplicate_tests(print_statements)

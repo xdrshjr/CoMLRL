@@ -300,7 +300,7 @@ class GRPOTrainer:
             for batch_idx, batch in enumerate(self.get_train_dataloader()):
                 # [dist] Evaluate only on main process
                 if batch_idx % 4 == 0 and self.is_main_process:
-                    eval_metrics = self.evaluate(num_eval_samples=4)
+                    self.evaluate(num_eval_samples=4)
 
                 for item_idx, batch_item in enumerate(batch):
                     self.optimizer.zero_grad()
@@ -580,7 +580,6 @@ class GRPOTrainer:
         # Process each prompt in the batch
         for batch_idx in range(len(prompt_input_ids)):
             prompt_ids = prompt_input_ids[batch_idx]
-            prompt_mask = prompt_attention_mask[batch_idx]
 
             # Process each generated completion
             for seq_idx, completion_tokens in enumerate(

@@ -508,7 +508,6 @@ class GRPOTrainer:
 
         for batch_idx in range(len(prompt_input_ids)):
             prompt_ids = prompt_input_ids[batch_idx]
-            prompt_mask = prompt_attention_mask[batch_idx]
 
             for seq_idx, completion_tokens in enumerate(
                 completion_input_ids[batch_idx]
