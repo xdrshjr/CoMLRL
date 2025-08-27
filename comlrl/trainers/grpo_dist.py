@@ -571,7 +571,6 @@ class GRPOTrainer:
         self.model.train()
 
         prompt_input_ids = completions_data["prompt_input_ids"]
-        prompt_attention_mask = completions_data["prompt_attention_mask"]
         completion_input_ids = completions_data["completion_input_ids"]
 
         total_loss = torch.tensor(0.0, device=device, requires_grad=True)
