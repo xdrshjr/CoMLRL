@@ -41,7 +41,7 @@ $$
   - MBPP
   - HumanEval
   - CoopHumanEval
-- [Code Completion](https://github.com/OpenMLRL/LLM_Collaboration_Module_Completion)
+- [Code Completion](https://github.com/OpenMLRL/LLM_Collaboration_Code_Completion)
   - ClassEval
 - [Bug Fix](https://github.com/OpenMLRL/LLM_Collaboration_Software_Engineering)
 
