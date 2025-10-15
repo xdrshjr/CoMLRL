@@ -26,11 +26,18 @@ See scripts in `examples/` for usage examples.
 
 ## Algorithms
 
-- **MAGRPO:** Multi-Agent Group-Relative Policy Optimization, credits to [GRPO](https://arxiv.org/pdf/2402.03300) and [Dr. GRPO](https://github.com/sail-sg/understand-r1-zero):
+- **MAGRPO:** Multi-Agent Group-Relative Policy Optimization, credits to [GRPO](https://arxiv.org/pdf/2402.03300) and [Dr. GRPO](https://arxiv.org/abs/2503.20783):
 
 $$
   J(\theta_i) = \mathbb{E}_{\mathbf{o}_0 \sim \mathcal{D}, \mathbf{h}^\mathcal{G} \sim \mathbf{\pi}_{\mathbf{\theta}}}
   \Bigg[\frac{1}{|B|}\frac{1}{|\mathcal{G}|}\sum_{h_i^\mathcal{G} \in B}\sum_{g \in \mathcal{G}} \Big(R^{(g)}_t - \text{mean}(R^{\mathcal{G}}_t)\Big)\Bigg];
+$$
+
+- **MARLOO:** Multi-Agent REINFORCE Leave-One-Out, credits to [RLOO](https://openreview.net/forum?id=r1lgTGL5DE) and [Revisiting REINFORCE](https://arxiv.org/abs/2402.14740):
+
+$$
+  J(\theta_i) = \mathbb{E}_{\mathbf{o}_0 \sim \mathcal{D}, \mathbf{h}^\mathcal{G} \sim \mathbf{\pi}_{\mathbf{\theta}}}
+  \Bigg[\frac{1}{|B|}\frac{1}{|\mathcal{G}|}\sum_{h_i^\mathcal{G} \in B}\sum_{g \in \mathcal{G}} \Big(R^{(g)}_t - \sum_{k\in \mathcal{G}, k\neq g}\frac{R^{(k)}_t}{|\mathcal{G}|-1}\Big)\Bigg];
 $$
 
 - More algs are coming soon!
