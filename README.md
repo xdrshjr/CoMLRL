@@ -40,6 +40,13 @@ $$
   \Bigg[\frac{1}{|B|}\frac{1}{|\mathcal{G}|}\sum_{h_i^\mathcal{G} \in B}\sum_{g \in \mathcal{G}} \Big(R^{(g)}_t - \sum_{k\in \mathcal{G}, k\neq g}\frac{R^{(k)}_t}{|\mathcal{G}|-1}\Big)\Bigg];
 $$
 
+- **MAReMax:** Multi-Agent REINFORCE with Group Max, credits to [ReMax](https://arxiv.org/abs/2310.10505):
+
+$$
+  J(\theta_i) = \mathbb{E}_{\mathbf{o}_0 \sim \mathcal{D}, \mathbf{h}^\mathcal{G} \sim \mathbf{\pi}_{\mathbf{\theta}}}
+  \Bigg[\frac{1}{|B|}\frac{1}{|\mathcal{G}|}\sum_{h_i^\mathcal{G} \in B}\sum_{g \in \mathcal{G}} \Big(R^{(g)}_t - \max(R_t^{\mathcal{G}}) \Big)\Bigg];
+$$
+
 - More algs are coming soon!
 
 ## Environments
