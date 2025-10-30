@@ -60,13 +60,13 @@ $$
 
 This library supports LLM collaboration in various environments:
 
-- [Code Generation](https://github.com/OpenMLRL/LLM_Collaboration_Code_Generation)
+- [Code Generation](https://github.com/OpenMLRL/LLM_Collab_Code_Generation)
   - MBPP
   - HumanEval
   - CoopHumanEval
-- [Code Completion](https://github.com/OpenMLRL/LLM_Collaboration_Code_Completion)
+- [Code Completion](https://github.com/OpenMLRL/LLM_Collab_Code_Completion)
   - ClassEval
-- [Bug Fix](https://github.com/OpenMLRL/LLM_Collaboration_Software_Engineering)
+- [Bug Fix](https://github.com/OpenMLRL/LLM_Collab_Software_Engineering)
 
 
 ## Contributors
