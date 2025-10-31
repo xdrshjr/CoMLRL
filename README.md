@@ -83,4 +83,4 @@ Thanks especially to the gracious help of contributors:
  </tr>
 </table>
 <!-- ALL-CONTRIBUTORS-LIST:END -->
-🤔: foundational ideas; 🚧: maintenance; 💻: code; 📖: documentation; 🐛: bug report.
+🤔 - Foundational Ideas; 🚧 - Maintenance; 💻 -  Code; 📖 - Documentation; 🐛 - Bug Report.
