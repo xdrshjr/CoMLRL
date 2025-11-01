@@ -14,7 +14,7 @@ disableKinds = ["taxonomy"]
 [params]
   BookTheme = "light"         # force light theme by default
   BookSection = "docs"        # top-level content section for the sidebar
-  BookToC = true               # enable table of contents
+  BookToC = false              # disable right sidebar Table of Contents
   BookSearch = true
   BookRepo = "https://github.com/OpenMLRL/CoMLRL"
   BookRepoBranch = "main"

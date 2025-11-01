@@ -1,5 +1,5 @@
 ---
-title: Developers
+title: Dev
 weight: 99
 bookCollapseSection: false
 bookFlatSection: true

@@ -8,3 +8,27 @@
   {{ end }}
   {{- .Page.Store.Set "katex" true -}}
 {{- end -}}
+
+{{/* Custom sidebar style overrides for menu colors */}}
+<link rel="stylesheet" href="{{ "css/sidebar.css" | relURL }}" />
+
+{{/* Inject H1 title at top of each article using the header title */}}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    try {
+      var article = document.querySelector('article.book-article');
+      if (!article) return;
+      var headerTitleEl = document.querySelector('.book-header h3');
+      var title = headerTitleEl ? headerTitleEl.textContent.trim() : (document.title || '').split('|')[0].trim();
+      if (!title) return;
+      var firstH1 = article.querySelector('h1');
+      if (!firstH1 || firstH1.textContent.trim() !== title) {
+        var h1 = document.createElement('h1');
+        h1.textContent = title;
+        article.insertBefore(h1, article.firstChild);
+      }
+    } catch (e) {
+      /* no-op */
+    }
+  });
+  </script>

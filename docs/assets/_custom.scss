@@ -1,14 +1,21 @@
-$menu-bg: #f7f7f8;
+$menu-bg: #f8f9fb; /* whiter, subtler blue tint */
 $menu-border: #e5e5e5;
 $menu-hover: #ececec;
 $menu-text: #111;
+/* Custom colors for sidebar: sections vs files */
+$menu-section-color: #384058; /* darker by 10 each channel */
+$menu-item-color: #545b74;    /* darker by 10 each channel */
+$menu-brand-color: #202532;   /* darker by 10 each channel */
+
+/* Article text color (derived from sidebar) */
+$article-text-color: $menu-item-color; /* keep variable for potential reuse */
 
 .book-menu {
   background: $menu-bg;
   border-right: 1px solid $menu-border;
   color: $menu-text;
-  flex: 0 0 16rem;
-  width: 16rem;
+  flex: 0 0 17rem; /* slightly wider */
+  width: 17rem;   /* match flex-basis */
   position: sticky;
   top: 0;
   height: 100vh;
@@ -17,6 +24,7 @@ $menu-text: #111;
 
 .book-menu .book-menu-content {
   padding: 0.75rem;
+  width: 17rem;   /* align with sidebar width */
 }
 
 .book-menu a {
@@ -46,36 +54,52 @@ $menu-text: #111;
 .book-brand,
 .book-brand a {
   font-weight: 700;
-  font-size: 1.2rem; /* brand size */
+  font-size: 1.25rem; /* brand size (+0.05rem) */
+  color: $menu-brand-color;
 }
 
 /* Make only top-level section titles bold; keep nested items normal */
 /* Bold + non-clickable for top-level section titles */
 .book-menu li.book-section > a,
 .book-menu li.book-section-flat > a,
-.book-menu .book-menu-content > ul > li > a {
+.book-menu .book-menu-content > ul > li > a,
+.book-menu .book-menu-content nav > ul > li > a {
   font-weight: 700 !important;
   pointer-events: none;
   cursor: default;
-  font-size: 1rem; /* section name size */
+  font-size: 1.05rem; /* section name size (+0.05rem) */
+  color: $menu-section-color;
 }
 .book-menu li.book-section > label,
 .book-menu li.book-section > summary,
 .book-menu .book-menu-content > ul > li > label,
 .book-menu .book-menu-content > ul > li > summary {
   font-weight: 700 !important;
-  font-size: 1rem; /* section name size */
+  font-size: 1.05rem; /* section name size (+0.05rem) */
+  color: $menu-section-color;
 }
 
 /* Reset nested lists (children) to normal weight and clickable */
 .book-menu li.book-section ul a,
 .book-menu li.book-section-flat ul a,
-.book-menu .book-menu-content > ul > li ul a {
+.book-menu .book-menu-content > ul > li ul a,
+.book-menu .book-menu-content nav > ul > li > ul > li > a,
+.book-menu nav ul li ul li > a,
+.book-menu nav ul li ul li > a.active,
+.book-menu nav ul li ul li > a[aria-current="page"],
+.book-menu nav ul li ul li > a[aria-current="true"] {
   font-weight: 400 !important;
   pointer-events: auto;
   cursor: pointer;
   padding-left: 1.5rem; /* adjusted indent for child items */
-  font-size: 0.85rem; /* file (page) link size */
+  font-size: 0.90rem; /* file (page) link size (+0.05rem) */
+  color: $menu-item-color;
+}
+
+/* Normalize nested list indent so Trainer matches other sections */
+.book-menu .book-menu-content nav > ul > li > ul {
+  padding-inline-start: 0 !important; /* theme sets 1.5em; zero for consistency */
+  margin: 0;
 }
 
 /* Optional: indent nested labels as well */
@@ -83,5 +107,48 @@ $menu-text: #111;
 .book-menu li.book-section-flat ul label,
 .book-menu .book-menu-content > ul > li ul label {
   padding-left: 1.5rem;
-  font-size: 0.85rem;
+  font-size: 0.90rem; /* +0.05rem */
+}
+
+/* Article typography: updated sizes and weights */
+.book-article {
+  font-size: 0.90rem;
+  color: $menu-item-color !important; /* match sidebar file link color */
+}
+.book-article h1 { font-size: 1.20rem; font-weight: 700; color: $menu-section-color !important; }
+.book-article h2 { font-size: 1.00rem; font-weight: 700; color: $menu-section-color !important; }
+.book-article h3 { font-size: 0.95rem; font-weight: 700; color: $menu-section-color !important; }
+/* Neutralize smaller headings to body size */
+.book-article h4,
+.book-article h5,
+.book-article h6 { font-size: 0.90rem; color: $menu-item-color !important; }
+
+/* Right-side ToC sidebar: match left sidebar background and file-name font style */
+.book-toc {
+  background: $menu-bg;
+  border-left: 1px solid $menu-border;
+  color: $menu-item-color;
+  flex: 0 0 17rem; /* match left sidebar width */
+  width: 17rem;
+  font-size: 0.80rem; /* right sidebar base font size */
+  font-weight: 700;   /* bold fonts in right sidebar */
+}
+.book-toc .book-toc-content {
+  padding: 0.75rem;
+  width: 17rem; /* match left sidebar content width */
+}
+.book-toc a,
+.book-toc nav ul a {
+  color: $menu-item-color !important;
+  font-size: 0.80rem; /* requested size */
+  font-weight: 700;    /* bold */
+  text-decoration: none;
+}
+.book-toc a:hover {
+  background: $menu-hover;
+}
+
+/* Hide TOC toggle control in header when ToC is disabled */
+.book-header label[for="toc-control"] {
+  display: none !important;
 }
