@@ -20,14 +20,14 @@
 To install a stable version from PyPI:
 
 ```bash
-pip install comlrl
+pip install comlrl # ensure torch is compatible
 ```
 
 To use the latest version of CoMLRL, clone the repository and install the required dependencies:
 
 ```bash
 cd CoMLRL
-pip install -r requirements.txt  # ensure torch wheel is compatible
+pip install -r requirements.txt  # ensure torch is compatible
 pip install -e .
 ```
 
