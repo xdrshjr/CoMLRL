@@ -1,14 +1,14 @@
 name: Pages
 
+# Temporarily disabled for private repo. Re-enable by adding push triggers below
+# or by dispatching with publish=true once the repo is public.
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'docs/**'
-      - '.github/workflows/docs.yml'
-      - 'README.md'
-      - 'comlrl/**'
   workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish docs to GitHub Pages"
+        required: true
+        default: "false"
 
 permissions:
   contents: read
@@ -21,6 +21,7 @@ concurrency:
 
 jobs:
   build:
+    if: ${{ inputs.publish == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -48,6 +49,7 @@ jobs:
           path: docs/public
 
   deploy:
+    if: ${{ inputs.publish == 'true' }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
