@@ -27,6 +27,22 @@
         h1.textContent = title;
         article.insertBefore(h1, article.firstChild);
       }
+
+      // Inject floating copyright footer once per page (single bold phrase)
+      (function() {
+        var footer = document.getElementById('omlrl-footer');
+        if (!footer) {
+          footer = document.createElement('div');
+          footer.id = 'omlrl-footer';
+          footer.className = 'omlrl-footer';
+          document.body.appendChild(footer);
+        }
+        // Render as one bold phrase to keep spacing consistent
+        footer.textContent = '';
+        var all = document.createElement('strong');
+        all.textContent = '\u00A9 OpenMLRL. All rights reserved.';
+        footer.appendChild(all);
+      })();
     } catch (e) {
       /* no-op */
     }

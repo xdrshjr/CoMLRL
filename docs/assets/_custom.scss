@@ -7,6 +7,9 @@ $menu-section-color: #384058; /* darker by 10 each channel */
 $menu-item-color: #545b74;    /* darker by 10 each channel */
 $menu-brand-color: #202532;   /* darker by 10 each channel */
 
+/* Single source of truth for sidebar width */
+$sidebar-width: 18rem;
+
 /* Article text color (derived from sidebar) */
 $article-text-color: $menu-item-color; /* keep variable for potential reuse */
 
@@ -14,7 +17,7 @@ $article-text-color: $menu-item-color; /* keep variable for potential reuse */
   background: $menu-bg;
   border-right: 1px solid $menu-border;
   color: $menu-text;
-  flex: 0 0 17rem; /* slightly wider */
+  flex: 0 0 18rem; /* slightly wider */
   width: 17rem;   /* match flex-basis */
   position: sticky;
   top: 0;
@@ -24,7 +27,7 @@ $article-text-color: $menu-item-color; /* keep variable for potential reuse */
 
 .book-menu .book-menu-content {
   padding: 0.75rem;
-  width: 17rem;   /* align with sidebar width */
+  width: $sidebar-width;
 }
 
 .book-menu a {
@@ -54,7 +57,7 @@ $article-text-color: $menu-item-color; /* keep variable for potential reuse */
 .book-brand,
 .book-brand a {
   font-weight: 700;
-  font-size: 1.25rem; /* brand size (+0.05rem) */
+  font-size: 1.5rem;
   color: $menu-brand-color;
 }
 
@@ -107,48 +110,60 @@ $article-text-color: $menu-item-color; /* keep variable for potential reuse */
 .book-menu li.book-section-flat ul label,
 .book-menu .book-menu-content > ul > li ul label {
   padding-left: 1.5rem;
-  font-size: 0.90rem; /* +0.05rem */
+  font-size: 0.95rem;
 }
 
 /* Article typography: updated sizes and weights */
 .book-article {
-  font-size: 0.90rem;
+  font-size: 1rem;
   color: $menu-item-color !important; /* match sidebar file link color */
+  margin-left: auto;
+  margin-right: auto;
+  width: 80%;
+  margin-left: 2rem;
+  margin-right: 0rem;
 }
-.book-article h1 { font-size: 1.20rem; font-weight: 700; color: $menu-section-color !important; }
-.book-article h2 { font-size: 1.00rem; font-weight: 700; color: $menu-section-color !important; }
-.book-article h3 { font-size: 0.95rem; font-weight: 700; color: $menu-section-color !important; }
+.book-article h1 { font-size: 1.3rem; font-weight: 700; color: $menu-section-color !important; }
+.book-article h2 { font-size: 1.1rem; font-weight: 700; color: $menu-section-color !important; }
+.book-article h3 { font-size: 1.0rem; font-weight: 700; color: $menu-section-color !important; }
 /* Neutralize smaller headings to body size */
 .book-article h4,
 .book-article h5,
-.book-article h6 { font-size: 0.90rem; color: $menu-item-color !important; }
+.book-article h6 { font-size: 0.95rem; color: $menu-item-color !important; }
 
-/* Right-side ToC sidebar: match left sidebar background and file-name font style */
+/* Remove ToC completely */
 .book-toc {
-  background: $menu-bg;
-  border-left: 1px solid $menu-border;
-  color: $menu-item-color;
-  flex: 0 0 17rem; /* match left sidebar width */
-  width: 17rem;
-  font-size: 0.80rem; /* right sidebar base font size */
-  font-weight: 700;   /* bold fonts in right sidebar */
-}
-.book-toc .book-toc-content {
-  padding: 0.75rem;
-  width: 17rem; /* match left sidebar content width */
-}
-.book-toc a,
-.book-toc nav ul a {
-  color: $menu-item-color !important;
-  font-size: 0.80rem; /* requested size */
-  font-weight: 700;    /* bold */
-  text-decoration: none;
-}
-.book-toc a:hover {
-  background: $menu-hover;
+  display: none !important;
 }
 
-/* Hide TOC toggle control in header when ToC is disabled */
+/* Hide TOC toggle control in header */
 .book-header label[for="toc-control"] {
   display: none !important;
+}
+
+/* Floating copyright footer across the page */
+.omlrl-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.50rem 0.75rem;
+  background: $menu-bg;
+  border-top: 1px solid $menu-border;
+  color: $menu-item-color;
+  font-size: 0.8rem;
+  z-index: 1000;
+}
+
+/* Avoid overlap with footer bar */
+body {
+  padding-bottom: 2.25rem; /* reserve space for floating footer */
+}
+
+@media print {
+  .omlrl-footer { display: none !important; }
+  body { padding-bottom: 0; }
 }
