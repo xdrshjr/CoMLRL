@@ -32,8 +32,20 @@
   margin: 0; /* keep consistent spacing */
 }
 
-/* CoMLRL brand title (darkest gray) */
+/* CoMLRL brand title/link (darkest gray) */
 .book-brand,
 .book-brand a {
-  color: #202532 !important; /* darker by 10 for brand */
+  color: #202532 !important;
+}
+
+/* Ensure sidebar logo displays at readable size */
+.book-brand img {
+  width: 200px;
+  height: auto;
+  display: block;
+}
+
+/* Hide original text label when logo is present */
+.book-brand span {
+  display: none;
 }
