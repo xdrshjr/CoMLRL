@@ -34,7 +34,7 @@ pip install -e .
 
 ## Usage
 
-Training 2 `Qwen-2.5-0.5B` agents to collaborate on TLDR summarization with MAGRPO, where the second agent is encouraged to generate summaries that are 3 times longer than the first agent.
+Here is an example to train 2 `Qwen-2.5-0.5B` agents to summarize TLDR with MAGRPO. The objective is to have a summary with 2 paragraphs, where the second one is 3 times longer than the first one.
 
 ```python
 from datasets import load_dataset
@@ -45,7 +45,7 @@ from comlrl.trainers.magrpo import MAGRPOConfig, MAGRPOTrainer
 tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-0.5B")
 dataset = load_dataset("trl-lib/tldr", split="train").select(range(64))
 reward = lambda a, b, batch_items=None: [
-    abs(max(len(b[0].rstrip()), 1) / max(len(a[0].rstrip()), 1) - 3.0)
+    abs(max(len(b[0]), 1) / max(len(a[0]), 1) - 3.0)
 ]
 
 # Initialize trainer and start training
@@ -56,7 +56,11 @@ trainer = MAGRPOTrainer(
     train_dataset=dataset,
     reward_func=reward,
     formatters=[lambda example: example["prompt"]] * 2,
-    args=MAGRPOConfig(output_dir="./magrpo"),
+    args=MAGRPOConfig(
+        output_dir="./magrpo",
+        num_agents=2,
+        per_device_train_batch_size=1,
+    ),
 )
 trainer.train()
 ```
