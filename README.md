@@ -1,7 +1,7 @@
 # <img src="docs/assets/comlrl.png" width="500px;" alt=""/>
 
 [![OpenMLRL](https://img.shields.io/badge/OpenMLRL-Project-blue.svg)](https://openmlrl.github.io)
-[![Hugging Face](https://img.shields.io/badge/huggingface-CoMLRL-yellow.svg)](https://huggingface.co/CoMLRL)
+[![Hugging Face](https://img.shields.io/badge/Hugging%20Face-CoMLRL-yellow.svg)](https://huggingface.co/CoMLRL)
 [![arXiv](https://img.shields.io/badge/arXiv-2508.04652-b31b1b.svg)](https://arxiv.org/pdf/2508.04652)
 
 [![Python Version](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/release/python-3100/)
@@ -16,13 +16,13 @@
 
 ## Installation
 
-To install a stable version from PyPI:
+To install a stable version from PyPI with pip:
 
 ```bash
-pip install comlrl # ensure torch is compatible
+python3 -m pip install comlrl
 ```
 
-To use the latest version of CoMLRL, clone the repository and install the required dependencies:
+To use the latest version of CoMLRL, clone the repository, and install it in editable mode:
 
 ```bash
 cd CoMLRL
@@ -30,9 +30,37 @@ pip install -r requirements.txt  # ensure torch is compatible
 pip install -e .
 ```
 
+Make sure `torch` is installed separately according to your system and CUDA version.
+
 ## Usage
 
-See scripts in `examples/` for usage examples.
+Training 2 Qwen-2.5-0.5B agents to collaborate on TLDR summarization with MAGRPO, where the second agent is encouraged to generate summaries that are 3 times longer than the first agent.
+
+```python
+from datasets import load_dataset
+from transformers import AutoTokenizer
+from comlrl.trainers.magrpo import MAGRPOConfig, MAGRPOTrainer
+
+# Load dataset and tokenizer
+tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-0.5B")
+dataset = load_dataset("trl-lib/tldr", split="train").select(range(64))
+reward = lambda a, b, batch_items=None: [
+    abs(max(len(b[0].rstrip()), 1) / max(len(a[0].rstrip()), 1) - 3.0)
+]
+
+# Initialize trainer and start training
+trainer = MAGRPOTrainer(
+    model="Qwen/Qwen2.5-0.5B",
+    num_agents=2,
+    tokenizer=tokenizer,
+    train_dataset=dataset,
+    reward_func=reward,
+    formatters=[lambda example: example["prompt"]] * 2,
+    args=MAGRPOConfig(output_dir="./magrpo"),
+)
+trainer.train()
+```
+
 
 ## Trainers
 
@@ -82,7 +110,7 @@ This library supports LLM collaboration in various environments:
 - [Code Completion](https://github.com/OpenMLRL/LLM_Collab_Code_Completion): Complete code snippets based on given contexts.
   - [ClassEval](https://conf.researchr.org/details/icse-2024/icse-2024-research-track/219/Evaluating-Large-Language-Models-in-Class-Level-Code-Generation) - Complete class-level code based on method stubs and docstrings.
 
-## Acknowledgements
+## Contributors
 
 Thanks especially to the gracious help of contributors:
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
@@ -96,3 +124,17 @@ Thanks especially to the gracious help of contributors:
 </table>
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 🤔 - Foundational Ideas; 🚧 - Maintenance; 💻 -  Code; 📖 - Documentation; 🐛 - Bug Report.
+
+## Citation
+
+```bibtex
+@misc{liu2025llmcollaborationmultiagentreinforcement,
+      title={LLM Collaboration With Multi-Agent Reinforcement Learning},
+      author={Shuo Liu and Tianle Chen and Zeyu Liang and Xueguang Lyu and Christopher Amato},
+      year={2025},
+      eprint={2508.04652},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2508.04652},
+}
+```
