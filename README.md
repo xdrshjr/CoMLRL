@@ -112,9 +112,9 @@ This library supports LLM collaboration in various environments:
 
 ## Contributing
 
-See [Contributing](https://OpenMLRL.github.io/CoMLRL/contributing/) guidelines on setting up a development environment.
+See [contributing guidelines](https://OpenMLRL.github.io/CoMLRL/contributing/) on setting up a development environment and contribute.
 
-Thanks especially to the gracious help of contributors:
+Thanks to the gracious help of contributors:
 <!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
 <table>
   <tr>
