@@ -43,10 +43,7 @@ from comlrl.trainers.magrpo import MAGRPOConfig, MAGRPOTrainer
 
 # Load dataset and tokenizer
 tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-0.5B")
-dataset = load_dataset("trl-lib/tldr", split="train").select(range(64))
-reward = lambda a, b, batch_items=None: [
-    abs(max(len(b[0]), 1) / max(len(a[0]), 1) - 3.0)
-]
+dataset = load_dataset("trl-lib/tldr", split="train").select(range(128))
 
 # Initialize trainer and start training
 trainer = MAGRPOTrainer(
@@ -54,11 +51,9 @@ trainer = MAGRPOTrainer(
     num_agents=2,
     tokenizer=tokenizer,
     train_dataset=dataset,
-    reward_func=reward,
+    reward_func=lambda a, b: [abs(max(len(b[0]), 1) / max(len(a[0]), 1) - 3.0)],
     formatters=[lambda example: example["prompt"]] * 2,
     args=MAGRPOConfig(
-        output_dir="./magrpo",
-        num_agents=2,
         per_device_train_batch_size=1,
     ),
 )
