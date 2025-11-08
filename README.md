@@ -67,7 +67,7 @@ trainer.train()
 
 We support various MARL trainers for LLM collaboration:
 
-- **REINFROCE Fine-Tuning Methods**
+- **REINFROCE (Critic-Free) Methods**
   - **_MAREINFORCE:_** Multi-Agent REINFORCE without a baseline.
   - **_MAGRPO:_** Multi-Agent Group-Relative Policy Optimization, credits to [GRPO](https://arxiv.org/pdf/2402.03300),[Dr. GRPO](https://arxiv.org/abs/2503.20783), and [TreeRPO](https://arxiv.org/abs/2506.05183).
   - **_MARLOO:_** Multi-Agent REINFORCE Leave-One-Out, credits to [RLOO](https://openreview.net/forum?id=r1lgTGL5DE) and [Revisiting REINFORCE](https://arxiv.org/abs/2402.14740).
