@@ -19,11 +19,7 @@ from transformers import (
 )
 
 from comlrl.models.actor_critic import CausalLMWithValueHead
-
-try:
-    import wandb
-except ImportError:  # pragma: no cover - wandb is optional at runtime
-    wandb = None
+import wandb
 
 
 RewardFunc = Callable[..., Sequence[float]]
