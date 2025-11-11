@@ -77,11 +77,6 @@ Cooperative MARL methods are grounded in the theory of <a href="https://www.fran
 - [Multi-Agent PPO]({{< ref "/docs/user-guide/ppo-finetuning" >}})
 - [Multi-Turn Training]({{< ref "/docs/user-guide/multi-turn" >}})
 
-## Environments
-- [Article Writing]({{< ref "/docs/env/writing-collaboration" >}})
-- [Code Completion]({{< ref "/docs/env/code-completion" >}})
-- [Code Generation]({{< ref "/docs/env/code-generation" >}})
-
 ## Examples
 - [Quick Demo]({{< ref "/docs/examples/quick-demo" >}})
 
