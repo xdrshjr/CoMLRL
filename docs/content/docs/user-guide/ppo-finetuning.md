@@ -14,7 +14,7 @@ Independent PPO ([IPPO](https://arxiv.org/abs/2011.09533)) optimizes each agent'
 J(\theta_i) = \mathbb{E}_{o_{i,0} \sim \mathcal{D}, h_i \sim \pi_{\theta_i}}\left[\log \pi_{\theta_i}(a_{i,t}|h_{i,t}) \cdot \sum_{l=0}^{\infty} (\gamma\lambda)^l \delta_{i,t+l} + \beta \mathcal{H}(\pi_{\theta_i})\right]
 {{< /katex >}}
 
-where {{< katex inline=true >}}\delta_{i,t} = r_{i,t} + \gamma V_\phi(h_{i,t+1}) - V_\phi(h_{i,t}){{< /katex >}} is the temporal difference error, {{< katex inline=true >}}\gamma{{< /katex >}} is the discount factor, {{< katex inline=true >}}\lambda{{< /katex >}} is the GAE parameter that balances bias and variance, and {{< katex inline=true >}}\mathcal{H}(\pi_{\theta_i}){{< /katex >}} is the entropy bonus with coefficient {{< katex inline=true >}}\beta{{< /katex >}}.
+where {{< katex inline=true >}}\delta_{i,t} = r_{i,t} + \gamma V_{\phi_i}(h_{i,t+1}) - V_{\phi_i}(h_{i,t}){{< /katex >}} is the temporal difference error, {{< katex inline=true >}}\gamma{{< /katex >}} is the discount factor, {{< katex inline=true >}}\lambda{{< /katex >}} is the GAE parameter that balances bias and variance, and {{< katex inline=true >}}\mathcal{H}(\pi_{\theta_i}){{< /katex >}} is the entropy bonus with coefficient {{< katex inline=true >}}\beta{{< /katex >}}.
 
 CoMLRL supports two IPPO architectures for critic implementation:
 
