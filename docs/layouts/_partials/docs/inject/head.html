@@ -54,15 +54,26 @@
     }
   });
 
-  // Cmd+K / Ctrl+K shortcut for search
+  // Cmd+K / Ctrl+K shortcut for search, Cmd/Ctrl+O for OpenMLRL, Cmd/Ctrl+L for LovelyBuggies
   document.addEventListener('keydown', function(e) {
-    // Cmd+K (Mac) or Ctrl+K (Windows/Linux)
-    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    if (!(e.metaKey || e.ctrlKey)) return;
+    var key = (e.key || '').toLowerCase();
+    if (key === 'k') {
       e.preventDefault();
       var searchInput = document.querySelector('.book-search input');
       if (searchInput) {
         searchInput.focus();
       }
+      return;
+    }
+    if (key === 'o') {
+      e.preventDefault();
+      window.location.href = 'https://openmlrl.github.io';
+      return;
+    }
+    if (key === 'l') {
+      e.preventDefault();
+      window.location.href = 'https://lovelybuggies.github.io';
     }
   });
 
