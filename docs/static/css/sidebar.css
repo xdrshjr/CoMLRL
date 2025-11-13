@@ -82,16 +82,24 @@
 }
 
 .github-corner svg {
-  fill: #384058;
-  color: #fff;
   position: absolute;
   top: 0;
   right: 0;
   border: 0;
 }
 
-.github-corner:hover svg {
-  fill: #202532;
+.github-corner svg path:first-of-type {
+  fill: url(#github-gradient) !important;
+}
+
+.github-corner .octo-arm,
+.github-corner .octo-body {
+  fill: #fff !important;
+}
+
+.github-corner:hover .octo-arm,
+.github-corner:hover .octo-body {
+  fill: rgba(255, 255, 255, 0.85) !important;
 }
 
 .github-corner .octo-arm {
@@ -120,5 +128,25 @@
   }
   .github-corner .octo-arm {
     animation: octocat-wave 560ms ease-in-out;
+  }
+}
+
+/* Move sidebar and main content modules to the right */
+.book-menu {
+  transform: translateX(4rem);
+}
+
+.book-page {
+  margin-left: 4rem;
+}
+
+/* Adjust for larger screens with more horizontal space */
+@media screen and (min-width: 1200px) {
+  .book-menu {
+    transform: translateX(5rem);
+  }
+
+  .book-page {
+    margin-left: 5rem;
   }
 }
