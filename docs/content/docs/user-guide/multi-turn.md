@@ -80,15 +80,15 @@ def custom_external(
 
 This interface allows full flexibility in how environment feedback, tool outputs, or other contextual information is integrated into the multi-turn training loop.
 
-### Example Modes
+### Example Modes (Expert, Diagnosis, Self-Improvement)
 
 An [environment for code generation](https://github.com/OpenMLRL/LLM_Collab_Code_Generation) includes 3 example external transition modes:
 
 {{% hint success %}}
 
-- `external.mode=expert_edits`: Uses an external LLM (default: DeepSeek-Coder) to propose code edits. The follow-up prompts include edit suggestions with context from previous generations. This mode is configurable via `expert_model` to use different models (e.g., Claude, GPT) when API keys are available.
+- `external.mode=expert_edits`: Uses an external LLM (default: DeepSeek-Coder) to propose code edits. Follow-up prompts include edit suggestions with context from previous turns. It can be configured via `expert_model` for different experts (e.g., Claude, GPT) when API keys are available.
 
-- `external.mode=level_feedback`: Static check with AST and dynamically executes code to provide diagnosis. The default sandbox test includes the first test test; configurable via `sandbox_slice` to include all tests (0, None, or 'all'), specific number of tests, or last tests (negative values).
+- `external.mode=level_feedback`: Static AST checks and dynamically executes code to provide diagnosis. The default sandbox test includes the first test; configurable via `sandbox_slice` to include all tests (0, None, or 'all'), specific number of tests (negative values enabled).
 
-- `external.mode=plain`: Self-improvement mode that includes previous responses and revision instructions without diagnostics or test results.
+- `external.mode=plain`: Self-improvement mode that just includes prompts and responses in the previous turns and a revision instruction.
 {{% /hint %}}
