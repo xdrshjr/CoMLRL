@@ -88,7 +88,7 @@ An [environment for code generation](https://github.com/OpenMLRL/LLM_Collab_Code
 
 - `external.mode=expert_edits`: Uses an external LLM (default: DeepSeek-Coder) to propose code edits. The follow-up prompts include edit suggestions with context from previous generations. This mode is configurable via `expert_model` to use different models (e.g., Claude, GPT) when API keys are available.
 
-- `external.mode=level_feedback`: Executes code against test cases and includes diagnostic feedback in the prompts. By default, includes the first test assertion; configurable via `sandbox_slice` to include all tests (0, None, or 'all'), specific number of tests, or last assertions (negative values).
+- `external.mode=level_feedback`: Static check with AST and dynamically executes code to provide diagnosis. The default sandbox test includes the first test test; configurable via `sandbox_slice` to include all tests (0, None, or 'all'), specific number of tests, or last tests (negative values).
 
-- `external.mode=plain`: Minimal feedback mode that includes previous responses and revision instructions without diagnostics or test results. Useful for tasks where external execution is not available or desired.
+- `external.mode=plain`: Self-improvement mode that includes previous responses and revision instructions without diagnostics or test results.
 {{% /hint %}}
