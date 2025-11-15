@@ -1,4 +1,4 @@
-baseURL = "/"            # GitHub Pages workflow overrides this via -b
+baseURL = "/CoMLRL/"     # Deployed under OpenMLRL.github.io/CoMLRL/
 title = "CoMLRL"
 languageCode = "en-us"
 defaultContentLanguage = "en"

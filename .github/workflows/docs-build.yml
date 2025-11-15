@@ -11,6 +11,9 @@ on:
     paths:
       - 'docs/**'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -31,13 +34,14 @@ jobs:
     - name: Build documentation
       run: |
         cd docs
-        hugo --minify
+        hugo --minify --baseURL "https://openmlrl.github.io/CoMLRL/"
 
-    - name: Deploy to GitHub Pages
+    - name: Deploy to OpenMLRL.github.io
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       uses: peaceiris/actions-gh-pages@v3
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        personal_token: ${{ secrets.OPENMLRL_TOKEN }}
+        external_repository: OpenMLRL/OpenMLRL.github.io
         publish_dir: ./docs/public
-        publish_branch: gh-pages
-        cname: comlrl.dev  # Optional: add your custom domain here
+        publish_branch: main
+        destination_dir: CoMLRL
