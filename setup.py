@@ -14,37 +14,14 @@ core_requires = [
     "wandb>=0.15.0",
 ]
 
-# Full dependencies including PyTorch
-# Note: Install PyTorch separately for your device (CPU/CUDA/ROCm/MPS)
-# See: https://pytorch.org/get-started/locally/
-full_requires = core_requires + [
-    "torch>=2.0.0",
-]
-
-# Development dependencies
-dev_requires = [
-    "black>=24.10.0",
-    "pre-commit>=3.8.0",
-]
-
-# Optional dependencies for specific features
-extras_require = {
-    "full": full_requires,
-    "dev": dev_requires,
-    "all": full_requires + dev_requires,
-}
+# Extra dependency groups are currently unused.
+extras_require = {}
 
 short_description = (
-    "CoMLRL trains multiple LLMs to collaborate via cooperative reinforcement "
-    "learning algorithms."
+    "Open-Source Library for Cooperative Multi-LLM Reinforcement Learning"
 )
 
-long_description = short_description + (
-    "\nCoMLRL is an open-source library for training multiple LLMs to "
-    "collaborate using Multi-Agent Reinforcement Learning (MARL). It provides "
-    "implementations of various MARL algorithms for LLM collaboration and support "
-    "for different environments and benchmarks."
-)
+long_description = short_description
 
 setup(
     name="comlrl",
