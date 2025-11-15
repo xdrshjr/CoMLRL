@@ -22,7 +22,7 @@
 
 ## Installation
 
-### Install from PyPI (Recommended)
+### Install from PyPI
 
 ```bash
 pip install comlrl
