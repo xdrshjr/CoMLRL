@@ -1,1 +1,1 @@
-from .actor_critic import ActorCriticConfig, ActorCriticTrainer
+from .actor_critic import CausalLMWithValueHead, ValueHead, ActorCriticOutput
