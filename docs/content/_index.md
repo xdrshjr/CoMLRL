@@ -39,7 +39,7 @@ Cooperative MARL methods are grounded in the theory of <a href="https://www.fran
 
 <em style="font-weight: 600; color: #9555af; margin-bottom: -0.5rem; display: block;"> "Does CoMLRL support single-agent fine-tuning?"</em>
 
-<strong>Yes!</strong> The simplest way is to set `num_agents=1` in your trainer. But since we omit fancy optimizations for simplicity of multi-agent training, you may not find the single-agent trainers optimal.
+<strong>Yes!</strong> The simplest way is to set `num_agents=1` in your trainer. But since we omit fancy optimizations for simplicity of multi-agent training, you may not find the single-agent trainers optimal. <a href="https://github.com/hiyouga/LLaMA-Factory">LLaMA-Factory</a>, <a href="https://github.com/huggingface/trl">trl</a>, <a href="https://github.com/OpenRLHF/OpenRLHF">OpenRLHF</a>, and <a href="https://github.com/volcengine/verl">verl</a> are good choices for single-agent fine-tuning.
 
 <em style="font-weight: 600; color: #9555af; margin-bottom: -0.5rem; display: block;"> "Does CoMLRL support advanced multi-agent methods at test-time?"</em>
 
