@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-message: "If you use CoMLRL, please cite the accompanying paper."
+message: "If you use CoMLRL, please cite this paper."
 title: "CoMLRL: Cooperative Multi-LLM Reinforcement Learning"
 authors:
   - family-names: Liu
