@@ -80,13 +80,13 @@ The trainer enforces `per_device_train_batch_size=1` and currently only supports
 
 ## MAAC
 
-Multi-Agent Actor-Critic (MAAC) shares a centralized critic across agents. The policy update of MAAC is:
+Multi-Agent Actor-Critic (MAAC) shares a centralized critic across agents. The policy objective mirrors IAC with a joint value baseline:
 
 {{< katex display=true >}}
-J(\theta_i) = \mathbb{E}\left[\log \pi_{\theta_i}(a_{i,t}|h_{i,t}) \cdot \mathbf{\Delta}_t + \beta \mathcal{H}(\pi_{\theta_i})\right]
+J(\theta_i) = \mathbb{E}_{h_t \sim \mathcal{D},\, a_t \sim \pi_{\theta}}\left[\log \pi_{\theta_i}(a_{i,t}|h_{i,t}) \cdot \mathbf{\delta}_t + \beta \mathcal{H}(\pi_{\theta_i})\right]
 {{< /katex >}}
 
-where {{< katex inline=true >}}\mathbf{\Delta}_t = r_t + \gamma V_{\phi}(h_{t+1}^{\text{joint}}) - V_{\phi}(h_{t}^{\text{joint}}){{< /katex >}} uses the shared critic on the joint prompt/history, and {{< katex inline=true >}}\beta{{< /katex >}} is the entropy coefficient.
+where {{< katex inline=true >}}\mathbf{\delta}_t = r_t + \gamma V_{\phi}(\mathbf{h}_{t+1}) - V_{\phi}(\mathbf{h}_{t}){{< /katex >}} uses the shared critic on the joint prompt/history, and {{< katex inline=true >}}\beta{{< /katex >}} is the entropy coefficient.
 
 {{% hint info %}}
 **MAACConfig** parameters:
@@ -94,16 +94,24 @@ where {{< katex inline=true >}}\mathbf{\Delta}_t = r_t + \gamma V_{\phi}(h_{t+1}
 - `output_dir`: Directory to save outputs
 - `actor_learning_rate`: Learning rate for actors
 - `critic_learning_rate`: Learning rate for shared critic
-- `weight_decay`, `adam_beta1`, `adam_beta2`, `adam_epsilon`, `max_grad_norm`
-- `rollout_buffer_size`, `mini_batch_size`, `ac_epochs`
-- `value_loss_coef`, `entropy_coef`, `advantage_normalization`
-- `max_new_tokens`, `temperature`, `top_p`, `top_k`, `do_sample`
-- `num_train_epochs`, `per_device_train_batch_size` (must be 1)
-- `pad_token_id`
-- `num_agents`
-- `reward_norm_eps`
-- `num_return_sequences`
-- `critic_model_name_or_path`: Required shared critic identifier
+- `weight_decay`: Weight decay for AdamW
+- `adam_beta1`, `adam_beta2`, `adam_epsilon`: Adam optimizer parameters
+- `max_grad_norm`: Gradient clipping norm
+- `rollout_buffer_size`: Number of samples to collect per agent before an update
+- `mini_batch_size`: Mini-batch size within each update
+- `ac_epochs`: Optimization epochs per rollout
+- `value_loss_coef`: Weight on critic loss
+- `entropy_coef`: Entropy bonus coefficient
+- `advantage_normalization`: Whether to normalize advantages before updates
+- `max_new_tokens`: Maximum tokens to generate per completion
+- `temperature`, `top_p`, `top_k`, `do_sample`: Sampling parameters
+- `num_train_epochs`: Number of training epochs
+- `per_device_train_batch_size`: Must be 1
+- `pad_token_id`: Padding token id
+- `num_agents`: Number of actors
+- `reward_norm_eps`: Epsilon when normalizing returns
+- `num_return_sequences`: Number of generations per prompt per agent
+- `critic_model_name_or_path`: Required identifier for the shared critic
 {{% /hint %}}
 
 {{% hint info %}}
