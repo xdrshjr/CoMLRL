@@ -530,6 +530,13 @@ class IACTrainer:
                         actor_model, sequences, full_attention_mask, prompt_len
                     )
 
+            # Per-history value variance across the k generations for this agent.
+            if value is not None and value.numel() > 1:
+                var = torch.var(value.detach().float(), unbiased=False).item()
+                self._log_metrics(
+                    {f"turn_1/agent_{agent_idx}/value_variance": float(var)}
+                )
+
             logprobs = []
             for seq, attn, resp_len in zip(
                 sequences, full_attention_mask, response_lens

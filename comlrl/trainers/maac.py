@@ -693,13 +693,20 @@ class MAACTrainer:
         random.shuffle(rollouts)
         metrics = defaultdict(list)
 
-        values = torch.stack(
-            [sample.old_value.view(-1)[0] for sample in rollouts]
-        ).float()
-        if values.numel() > 1 and torch.isfinite(values).all():
-            metrics["value_variance"].append(
-                float(torch.var(values, unbiased=False).item())
+        # Per-prompt reward variance across generations (all agents combined)
+        prompt_rewards: Dict[str, List[float]] = defaultdict(list)
+        for sample in rollouts:
+            prompt_rewards[sample.prompt].append(
+                float(sample.reward.view(-1)[0].item())
             )
+        prompt_vars: List[float] = []
+        for vals in prompt_rewards.values():
+            if len(vals) > 1:
+                t = torch.tensor(vals, dtype=torch.float32)
+                prompt_vars.append(float(torch.var(t, unbiased=False).item()))
+        if prompt_vars:
+            metrics["value_variance"].append(float(sum(prompt_vars) / len(prompt_vars)))
+
         rewards = torch.stack(
             [sample.reward.view(-1)[0] for sample in rollouts]
         ).float()

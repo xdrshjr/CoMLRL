@@ -20,7 +20,7 @@ CoMLRL supports two IAC architectures for critic implementation:
 
 - **Separate Critic**: Uses an independent model dedicated to value estimation, completely separate from the actor. It provides more stable training but requires longer training time and larger VRAM usage.
 
-- **Value Head**: Attaches a small value prediction head directly to the actor model, sharing the base model's representations. It reduces VRAM usage, but since both actor and critic share the same model, gradient errors can be amplified during training.
+- **Shared Model**: Attaches a small value prediction head directly to the transformer backbone, sharing the actor model's representations to reduce the time and space costs.
 
 {{% hint info %}}
 **IACConfig** provides parameters for configuring Independent Actor-Critic training:
