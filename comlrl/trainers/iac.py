@@ -11,6 +11,7 @@ import torch
 import torch.nn.functional as F
 from datasets import Dataset, IterableDataset
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -19,6 +20,7 @@ from transformers import (
 )
 
 from comlrl.models.actor_critic import CausalLMWithValueHead
+from comlrl.utils import get_logger
 import wandb
 
 
@@ -122,6 +124,9 @@ class IACTrainer:
         if reward_func is None or not callable(reward_func):
             raise ValueError("A callable reward_func must be provided.")
 
+        self.logger = get_logger("comlrl.iac")
+        self.logger.info("Initializing IAC Trainer")
+        
         self.args = args if args is not None else IACConfig()
         self.reward_func = reward_func
         self.reward_processor = reward_processor or (lambda x: x)
@@ -133,7 +138,10 @@ class IACTrainer:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if not torch.cuda.is_available():
             # CPU fallback is allowed for experimentation but will be slow.
-            print("Warning: CUDA not available. Training will run on CPU.")
+            self.logger.warning("CUDA not available. Training will run on CPU.")
+
+        self.logger.debug(f"Device: {self.device}")
+        self.logger.debug(f"Number of agents: {self.args.num_agents}")
 
         self.tokenizer = tokenizer
         self.formatters = self._setup_formatter(formatters)
@@ -159,12 +167,15 @@ class IACTrainer:
                 "Multi-agent IAC requires `model` to be a pretrained identifier string."
             )
 
-        for _ in range(self.args.num_agents):
+        self.logger.info(f"Loading {self.args.num_agents} actor model(s)")
+        for i in range(self.args.num_agents):
+            self.logger.debug(f"Loading actor model {i+1}/{self.args.num_agents}")
             actor_model = self._load_actor_model(model)
             actor_model.to(self.device)
             self.actor_models.append(actor_model)
 
         if self.args.use_separate_critic:
+            self.logger.info(f"Loading {self.args.num_agents} separate critic model(s)")
             critic_identifier = self.args.critic_model_name_or_path or model
             if critic_identifier is None:
                 raise ValueError(
@@ -176,11 +187,13 @@ class IACTrainer:
                 raise ValueError(
                     "Multi-agent IAC requires string identifiers for separate critics."
                 )
-            for _ in range(self.args.num_agents):
+            for i in range(self.args.num_agents):
+                self.logger.debug(f"Loading critic model {i+1}/{self.args.num_agents}")
                 critic_model = self._load_critic_model(critic_identifier)
                 critic_model.to(self.device)
                 self.critic_models.append(critic_model)
         else:
+            self.logger.debug("Using shared value head (no separate critic)")
             self.critic_models = [None] * self.args.num_agents
 
         self._configure_tokenizer_specials()
@@ -927,24 +940,62 @@ class IACTrainer:
     # Training loop
     # --------------------------------------------------------------------- #
     def train(self) -> None:
+        self.logger.info("Starting IAC training")
+        self.logger.info(f"Training epochs: {self.args.num_train_epochs}")
+        self.logger.info(f"Rollout buffer size: {self.args.rollout_buffer_size}")
+        self.logger.info(f"Mini batch size: {self.args.mini_batch_size}")
+        
         dataloader = self.get_train_dataloader()
         total_epochs = self.args.num_train_epochs
+        total_samples = len(dataloader) if hasattr(dataloader, "__len__") else None
+        
+        self.logger.info(f"Dataset size: {total_samples if total_samples else 'Unknown'} batches")
 
         for epoch in range(total_epochs):
+            self.logger.info(f"Starting epoch {epoch + 1}/{total_epochs}")
             epoch_metrics = defaultdict(list)
-            for batch in dataloader:
-                for item in batch:
-                    rollouts = self._collect_rollouts(item)
-                    for sample in rollouts:
-                        agent_idx = sample.agent_idx
-                        buffer = self.rollout_buffers[agent_idx]
-                        buffer.append(sample)
-                        if len(buffer) >= self.args.rollout_buffer_size:
-                            self._process_buffer(agent_idx, buffer, epoch_metrics)
+            
+            # Create progress bar for batches
+            with tqdm(
+                dataloader,
+                desc=f"Epoch {epoch + 1}/{total_epochs}",
+                unit="batch",
+                leave=True,
+                position=0,
+            ) as pbar:
+                for batch in pbar:
+                    for item in batch:
+                        self.logger.debug("Collecting rollouts")
+                        rollouts = self._collect_rollouts(item)
+                        self.logger.debug(f"Collected {len(rollouts)} rollout samples")
+                        
+                        for sample in rollouts:
+                            agent_idx = sample.agent_idx
+                            buffer = self.rollout_buffers[agent_idx]
+                            buffer.append(sample)
+                            if len(buffer) >= self.args.rollout_buffer_size:
+                                self.logger.debug(
+                                    f"Processing buffer for agent {agent_idx} "
+                                    f"(size: {len(buffer)})"
+                                )
+                                self._process_buffer(agent_idx, buffer, epoch_metrics)
+                    
+                    # Update progress bar with current metrics
+                    if epoch_metrics:
+                        latest_metrics = {
+                            k: v[-1] for k, v in epoch_metrics.items() if v
+                        }
+                        if latest_metrics:
+                            pbar.set_postfix(latest_metrics)
 
+            # Process remaining samples in buffers
             for agent_idx, buffer in enumerate(self.rollout_buffers):
                 if not buffer:
                     continue
+                self.logger.debug(
+                    f"Processing final buffer for agent {agent_idx} "
+                    f"(size: {len(buffer)})"
+                )
                 self._process_buffer(agent_idx, buffer, epoch_metrics)
 
             summary = {
@@ -953,7 +1004,12 @@ class IACTrainer:
                 if values
             }
             if summary:
-                print(f"Epoch {epoch + 1}/{total_epochs} metrics: {summary}")
+                self.logger.info(
+                    f"Epoch {epoch + 1}/{total_epochs} completed. "
+                    f"Metrics: {summary}"
+                )
+        
+        self.logger.info("Training completed successfully")
 
     # --------------------------------------------------------------------- #
     # Logging and persistence

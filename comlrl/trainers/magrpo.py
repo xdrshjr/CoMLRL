@@ -12,6 +12,8 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm  # type: ignore
 from transformers import PreTrainedModel, PreTrainedTokenizerBase, TrainingArguments
 
+from comlrl.utils import get_logger
+
 
 @dataclass
 class MAGRPOConfig(TrainingArguments):
@@ -28,11 +30,11 @@ class MAGRPOConfig(TrainingArguments):
 
     # Sampling/generation
     num_generations: int = field(
-        default=4,
+        default=2,
         metadata={"help": "Number of generations to sample per prompt for each agent."},
     )
     max_new_tokens: int = field(
-        default=256,
+        default=128,
         metadata={"help": "Maximum number of new tokens to generate after the prompt."},
     )
     temperature: float = field(
@@ -72,6 +74,12 @@ class MAGRPOConfig(TrainingArguments):
         },
     )
 
+    # Training
+    num_train_epochs: int = field(
+        default=3,
+        metadata={"help": "Number of training epochs to run."},
+    )
+    
     # Evaluation
     eval_interval: int = field(
         default=8,
@@ -80,6 +88,12 @@ class MAGRPOConfig(TrainingArguments):
     eval_num_samples: int = field(
         default=4,
         metadata={"help": "Number of samples to evaluate per evaluation run."},
+    )
+    
+    # Logging
+    loss_log_interval: int = field(
+        default=1,
+        metadata={"help": "Log loss every N training batches."},
     )
 
 
@@ -141,6 +155,10 @@ class MAGRPOTrainer:
                 "GPU not found. MAGRPOTrainer requires GPU for training."
             )
 
+        # Initialize logger
+        self.logger = get_logger("comlrl.magrpo")
+        self.logger.info("Initializing MAGRPO Trainer")
+
         if model is None and agents is None:
             raise ValueError("Either model or agents must be provided")
         if model is not None and agents is not None:
@@ -149,6 +167,14 @@ class MAGRPOTrainer:
         # Training arguments
         self.args = args if args is not None else MAGRPOConfig()
         self.data_step = 0
+        
+        self.logger.info(f"Training configuration:")
+        self.logger.info(f"  Epochs: {self.args.num_train_epochs}")
+        self.logger.info(f"  Generations per prompt: {self.args.num_generations}")
+        self.logger.info(f"  Max new tokens: {self.args.max_new_tokens}")
+        self.logger.info(f"  Number of turns: {self.args.num_turns}")
+        self.logger.info(f"  Joint mode: {self.args.joint_mode}")
+        self.logger.info(f"  Loss log interval: {self.args.loss_log_interval}")
 
         # Reward and formatting
         self._setup_formatters(formatters, num_agents)
@@ -177,6 +203,7 @@ class MAGRPOTrainer:
             if isinstance(model, str):
                 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+                self.logger.info(f"Loading {num_agents} homogeneous agents from {model}")
                 self.agents = [
                     AutoModelForCausalLM.from_pretrained(
                         model, **self.model_config.get("model_kwargs", {})
@@ -186,6 +213,7 @@ class MAGRPOTrainer:
                 self.model_name = model
 
                 if tokenizer is None:
+                    self.logger.debug(f"Loading tokenizer from {model}")
                     self.tokenizer = AutoTokenizer.from_pretrained(
                         model, **self.model_config.get("tokenizer_kwargs", {})
                     )
@@ -694,18 +722,24 @@ class MAGRPOTrainer:
         """
         Unified train method that supports both single-turn and multi-turn training.
         """
+        self.logger.info("Starting MAGRPO training")
+        
         # Initialize wandb if not already done
         if self.wandb_config is not None and not self.wandb_initialized:
             self._init_wandb()
 
         # Setup devices for training (GPU is required)
         device = torch.device("cuda")
-        for agent in self.agents:
+        self.logger.info(f"Moving models to device: {device}")
+        for i, agent in enumerate(self.agents):
+            self.logger.debug(f"Moving agent {i+1}/{len(self.agents)} to {device}")
             agent.to(device)
             agent.train()
 
         # Create the data pipeline for generating examples
         for epoch in range(0, int(self.args.num_train_epochs)):
+            self.logger.info(f"Starting epoch {epoch+1}/{int(self.args.num_train_epochs)}")
+            
             # No per-agent reward tracking in single reward mode
 
             # Turn tracking for all cases (including single-turn)
@@ -714,55 +748,84 @@ class MAGRPOTrainer:
             ]  # immediate rewards
             epoch_turn_returns = [[] for _ in range(self.args.num_turns)]  # returns
             dl = self.get_train_dataloader()
-            if not getattr(self, "verbose", True):
-                it = enumerate(
-                    tqdm(
-                        dl,
-                        total=len(dl),
-                        desc=f"Epoch {epoch+1}/{int(self.args.num_train_epochs)}",
+            
+            # Always show progress bar
+            total_batches = len(dl) if hasattr(dl, "__len__") else None
+            self.logger.info(
+                f"Dataset size: {total_batches if total_batches else 'Unknown'} batches"
+            )
+            
+            with tqdm(
+                dl,
+                total=total_batches,
+                desc=f"Epoch {epoch+1}/{int(self.args.num_train_epochs)}",
+                unit="batch",
+                leave=True,
+                position=0,
+            ) as pbar:
+                for batch_idx, batch in enumerate(pbar):
+                    self.data_step += len(batch)
+                    # Periodic evaluation based on configuration
+                    if int(self.args.eval_interval) > 0 and (
+                        batch_idx % int(self.args.eval_interval) == 0
+                    ):
+                        self.logger.info(f"Running evaluation at batch {batch_idx}")
+                        # evaluate() already logs its metrics; avoid duplicate logging here
+                        _ = self.evaluate(num_eval_samples=int(self.args.eval_num_samples))
+
+                    # Process single batch item (batch_size=1 enforced)
+                    batch_item = batch[0]
+                    self.logger.debug(f"Processing batch {batch_idx+1}")
+                    
+                    # Unified training step (returns-based, backward updates)
+                    batch_loss, batch_stats = self._train_step_returns(
+                        batch_item,
+                        epoch_turn_rewards,
+                        epoch_turn_returns,
+                        **kwargs,
                     )
-                )
-            else:
-                it = enumerate(dl)
-            for batch_idx, batch in it:
-                self.data_step += len(batch)
-                # Periodic evaluation based on configuration
-                if int(self.args.eval_interval) > 0 and (
-                    batch_idx % int(self.args.eval_interval) == 0
-                ):
-                    # evaluate() already logs its metrics; avoid duplicate logging here
-                    _ = self.evaluate(num_eval_samples=int(self.args.eval_num_samples))
 
-                # Process single batch item (batch_size=1 enforced)
-                batch_item = batch[0]
-                # Unified training step (returns-based, backward updates)
-                batch_loss, batch_stats = self._train_step_returns(
-                    batch_item,
-                    epoch_turn_rewards,
-                    epoch_turn_returns,
-                    **kwargs,
-                )
+                    # Log per-batch metrics once (aggregate across turns)
+                    if isinstance(batch_stats, dict):
+                        batch_log: Dict[str, Any] = {}
+                        n_turns = max(1, int(self.args.num_turns))
+                        for t in range(n_turns):
+                            stats = batch_stats.get(t) or {}
+                            if self.wandb_initialized:
+                                prefix = f"turn_{t + 1}/"
+                                if "batch_mean_reward" in stats:
+                                    batch_log[prefix + "reward_mean"] = stats[
+                                        "batch_mean_reward"
+                                    ]
+                                if "batch_expected_return" in stats:
+                                    batch_log[prefix + "expected_return"] = stats[
+                                        "batch_expected_return"
+                                    ]
+                                # No per-function reward splitting in single reward mode
+                        
+                        # Log loss at specified intervals
+                        if int(self.args.loss_log_interval) > 0 and (
+                            batch_idx % int(self.args.loss_log_interval) == 0
+                        ):
+                            batch_log["train/loss"] = batch_loss
+                            self.logger.info(
+                                f"Epoch {epoch+1}/{int(self.args.num_train_epochs)}, "
+                                f"Batch {batch_idx+1}/{total_batches if total_batches else '?'}: "
+                                f"Loss = {batch_loss:.6f}"
+                            )
 
-                # Log per-batch metrics once (aggregate across turns)
-                if isinstance(batch_stats, dict):
-                    batch_log: Dict[str, Any] = {}
-                    n_turns = max(1, int(self.args.num_turns))
-                    for t in range(n_turns):
-                        stats = batch_stats.get(t) or {}
-                        if self.wandb_initialized:
-                            prefix = f"turn_{t + 1}/"
-                            if "batch_mean_reward" in stats:
-                                batch_log[prefix + "reward_mean"] = stats[
-                                    "batch_mean_reward"
-                                ]
-                            if "batch_expected_return" in stats:
-                                batch_log[prefix + "expected_return"] = stats[
-                                    "batch_expected_return"
-                                ]
-                            # No per-function reward splitting in single reward mode
-
-                    if self.wandb_initialized and batch_log:
-                        wandb.log(batch_log, step=self.data_step)
+                        if self.wandb_initialized and batch_log:
+                            wandb.log(batch_log, step=self.data_step)
+                        
+                        # Update progress bar with current metrics
+                        if batch_log:
+                            display_metrics = {}
+                            for k, v in batch_log.items():
+                                if "reward_mean" in k or "expected_return" in k:
+                                    display_metrics[k.split("/")[-1]] = f"{v:.4f}"
+                                elif k == "train/loss":
+                                    display_metrics["loss"] = f"{v:.6f}"
+                            pbar.set_postfix(display_metrics)
 
             # Log per-turn epoch averages inline (avoid custom system/* metrics)
             if self.wandb_initialized:
@@ -779,6 +842,12 @@ class MAGRPOTrainer:
                         )
                 if epoch_log:
                     wandb.log(epoch_log, step=self.data_step)
+                    self.logger.info(
+                        f"Epoch {epoch+1}/{int(self.args.num_train_epochs)} completed. "
+                        f"Metrics: {epoch_log}"
+                    )
+        
+        self.logger.info("Training completed successfully")
 
     def _train_step_returns(
         self,
@@ -795,9 +864,12 @@ class MAGRPOTrainer:
         - no per-function breakdown (single reward function)
         - levels (code-only: mean of level_1/2/3 and bonus across nodes)
         """
+        self.logger.debug("Starting training step with returns-based updates")
         num_turns = int(self.args.num_turns)
         num_gens = int(self.args.num_generations)
         gamma = float(getattr(self.args, "discount", 0.9))
+        
+        self.logger.debug(f"  Num turns: {num_turns}, Generations: {num_gens}, Gamma: {gamma}")
 
         # Internal per-turn node data not returned to caller
 

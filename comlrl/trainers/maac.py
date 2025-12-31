@@ -11,6 +11,7 @@ import torch
 import torch.nn.functional as F
 from datasets import Dataset, IterableDataset
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -21,6 +22,7 @@ from transformers import (
 import wandb
 from comlrl.models.actor_critic import CausalLMWithValueHead
 from comlrl.trainers.iac import RolloutSample
+from comlrl.utils import get_logger
 
 RewardFunc = Callable[..., Sequence[float]]
 Formatter = Callable[[Dict[str, Any]], str]
@@ -117,6 +119,10 @@ class MAACTrainer:
     ) -> None:
         if reward_func is None or not callable(reward_func):
             raise ValueError("A callable reward_func must be provided.")
+        
+        self.logger = get_logger("comlrl.maac")
+        self.logger.info("Initializing MAAC Trainer")
+        
         self.args = args if args is not None else MAACConfig()
         self.reward_func = reward_func
         self.reward_processor = reward_processor or (lambda x: x)
@@ -127,7 +133,11 @@ class MAACTrainer:
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         if not torch.cuda.is_available():
-            print("Warning: CUDA not available. Training will run on CPU.")
+            self.logger.warning("CUDA not available. Training will run on CPU.")
+        
+        self.logger.debug(f"Device: {self.device}")
+        self.logger.debug(f"Number of agents: {self.args.num_agents}")
+        self.logger.debug(f"Number of turns: {self.args.num_turns}")
 
         self.tokenizer = self._ensure_tokenizer(model, tokenizer)
         if self.tokenizer.pad_token is None:
@@ -150,12 +160,15 @@ class MAACTrainer:
             raise ValueError("Multi-turn MAAC requires an external_transition.")
         self.external_transition = external_transition
 
+        self.logger.info(f"Loading {self.args.num_agents} actor model(s)")
         self.actor_models: List[CausalLMWithValueHead] = []
-        for _ in range(self.args.num_agents):
+        for i in range(self.args.num_agents):
+            self.logger.debug(f"Loading actor model {i+1}/{self.args.num_agents}")
             actor_model = self._load_actor_model(model)
             actor_model.to(self.device)
             self.actor_models.append(actor_model)
 
+        self.logger.info("Loading shared critic model")
         critic_identifier = self.args.critic_model_name_or_path
         if critic_identifier is None:
             raise ValueError("critic_model_name_or_path must be provided.")
@@ -1060,31 +1073,77 @@ class MAACTrainer:
     # Training loop
     # ------------------------------------------------------------------ #
     def train(self) -> None:
+        self.logger.info("Starting MAAC training")
+        self.logger.info(f"Training epochs: {self.args.num_train_epochs}")
+        self.logger.info(f"Rollout buffer size: {self.args.rollout_buffer_size}")
+        self.logger.info(f"Mini batch size: {self.args.mini_batch_size}")
+        
         dataloader = self.get_train_dataloader()
         total_epochs = self.args.num_train_epochs
+        total_samples = len(dataloader) if hasattr(dataloader, "__len__") else None
+        
+        self.logger.info(f"Dataset size: {total_samples if total_samples else 'Unknown'} batches")
 
         for epoch in range(total_epochs):
+            self.logger.info(f"Starting epoch {epoch + 1}/{total_epochs}")
             epoch_metrics = defaultdict(list)
-            for batch_idx, batch in enumerate(dataloader):
-                if (
-                    self.eval_dataset is not None
-                    and self.args.eval_interval > 0
-                    and batch_idx % int(self.args.eval_interval) == 0
-                ):
-                    self.evaluate()
-                for item in batch:
-                    rollouts = self._collect_rollouts(item)
-                    for sample in rollouts:
-                        agent_idx = sample.agent_idx
-                        buffer = self.rollout_buffers[agent_idx]
-                        buffer.append(sample)
-                        if len(buffer) >= self.args.rollout_buffer_size:
-                            self._process_buffer(agent_idx, buffer, epoch_metrics)
-                    self.data_step += 1
+            
+            # Create progress bar for batches
+            with tqdm(
+                enumerate(dataloader),
+                desc=f"Epoch {epoch + 1}/{total_epochs}",
+                unit="batch",
+                total=total_samples,
+                leave=True,
+                position=0,
+            ) as pbar:
+                for batch_idx, batch in pbar:
+                    if (
+                        self.eval_dataset is not None
+                        and self.args.eval_interval > 0
+                        and batch_idx % int(self.args.eval_interval) == 0
+                    ):
+                        self.logger.info(f"Running evaluation at batch {batch_idx}")
+                        self.evaluate()
+                    
+                    for item in batch:
+                        self.logger.debug("Collecting rollouts")
+                        rollouts = self._collect_rollouts(item)
+                        self.logger.debug(f"Collected {len(rollouts)} rollout samples")
+                        
+                        for sample in rollouts:
+                            agent_idx = sample.agent_idx
+                            buffer = self.rollout_buffers[agent_idx]
+                            buffer.append(sample)
+                            if len(buffer) >= self.args.rollout_buffer_size:
+                                self.logger.debug(
+                                    f"Processing buffer for agent {agent_idx} "
+                                    f"(size: {len(buffer)})"
+                                )
+                                self._process_buffer(agent_idx, buffer, epoch_metrics)
+                        self.data_step += 1
+                    
+                    # Update progress bar with current metrics
+                    if epoch_metrics:
+                        latest_metrics = {
+                            k: v[-1] for k, v in epoch_metrics.items() if v
+                        }
+                        if latest_metrics:
+                            # Show only key metrics in progress bar
+                            display_metrics = {}
+                            for k, v in latest_metrics.items():
+                                if "reward_mean" in k or "policy_loss" in k:
+                                    display_metrics[k.split("/")[-1]] = f"{v:.4f}"
+                            pbar.set_postfix(display_metrics)
 
+            # Process remaining samples in buffers
             for agent_idx, buffer in enumerate(self.rollout_buffers):
                 if not buffer:
                     continue
+                self.logger.debug(
+                    f"Processing final buffer for agent {agent_idx} "
+                    f"(size: {len(buffer)})"
+                )
                 self._process_buffer(agent_idx, buffer, epoch_metrics)
 
             summary = {
@@ -1114,7 +1173,12 @@ class MAACTrainer:
 
             if summary:
                 to_print = epoch_log if epoch_log else summary
-                print(f"Epoch {epoch + 1}/{total_epochs} metrics: {to_print}")
+                self.logger.info(
+                    f"Epoch {epoch + 1}/{total_epochs} completed. "
+                    f"Metrics: {to_print}"
+                )
+        
+        self.logger.info("Training completed successfully")
 
     # ------------------------------------------------------------------ #
     # Logging and persistence
